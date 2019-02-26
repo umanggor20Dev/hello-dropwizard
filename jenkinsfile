@@ -1,0 +1,77 @@
+node{
+		def DOCKER_USERNAME
+		def DOCKER_PASS
+		stage('Preparation') { // for display purposes
+			// Get some code from a GitHub repository
+			git 'https://github.com/umang1985/hello-dropwizard.git'
+			DOCKER_USERNAME = 'umanggor'
+			DOCKER_PASS = "umang12*"
+		
+		}
+		stage('Build') {
+		  // Run the maven build
+			dir('helloDropwizard'){
+					sh "mvn clean install -DskipTests"
+					stash name: 'helloDropwizard',
+						  excludes: 'target/surefire-reports/**',
+						  includes: '**'
+			}
+		}   
+		  
+		stage(test'){
+			dir('helloDropwizard'){
+				sh "mvn test"
+				junit 'target/surefire-reports/TEST-*.xml'
+				archiveArtifacts  'target/*.war'
+			}
+		}
+			
+		stage('Code Analysis'){
+			try{
+			dir('DTH'){
+				sh "mvn sonar:sonar \
+				  -Dsonar.host.url=http://helloDropwizard.eastus.cloudapp.azure.com:9000/sonar \
+				  -Dsonar.login=2f4b2d4670146b405d2357c3dcbd9d879168cfea"
+			}
+			}catch(err){
+				currentBuild.result='FAILED'
+	
+			}
+		}
+	}
+  
+  stage('Docker Push'){
+			dir('helloDropwizard'){
+				sh  '''if [ "$(docker ps -a |grep helloDropwizard | wc -l)" -ne 0 ]; then docker rm -f $(docker ps -a |grep helloDropwizard | awk '{print $1}') ; fi'''
+				sh  '''if [ "$(docker images | grep helloDropwizard | wc -l)" -ne 0 ]; then docker rmi -f $(docker images |grep helloDropwizard | awk '{print $3}') ; fi'''
+				sh  "docker build -t helloDropwizardimage:latest ."
+				sh    "docker images"
+				sh    "docker login -u${DOCKER_USERNAME} -p${DOCKER_PASS}"
+				sh    "docker tag helloDropwizardimage:latest umanggor/helloDropwizardservice:latest"
+				sh    "docker push umanggor/helloDropwizardservice:latest"
+				sh    "docker images"
+			}
+		   
+		} 
+  
+	stage 'Deployment in Stage and Test Environment'
+	parallel envstage:
+		{
+			node{       
+				   sh 'rm -rf *'
+				   unstash 'dthCode'
+				   dir('DTH'){
+				   		echo "Deploying in Staging"
+					    sh "docker-compose up -d"
+				   }
+			}
+		}, envTest:
+		{
+			node{
+					sh 'rm -rf *'
+					unstash 'dthCode'
+					dir('DTH'){
+						echo"Deploying in Test"
+					}
+			}
+		}
