@@ -2,7 +2,8 @@ node{
 		
 		
     def checkout_from_reference(commit) {
-    def reponame = 'code-maven'
+    //def reponame = 'code-maven'
+     def reponame ='hello-dropwizard'
     def repo_url = "git@bitbucket.org:USER/${reponame}.git"
  
     echo "Checkout SHA from reference $commit"
