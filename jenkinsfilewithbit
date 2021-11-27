@@ -43,7 +43,7 @@ node{
 			}
 		}   
 		  
-		stage(test'){
+		stage('test'){
 			dir('helloDropwizard'){
 				sh "mvn test"
 				junit 'target/surefire-reports/TEST-*.xml'
