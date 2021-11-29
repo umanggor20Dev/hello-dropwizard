@@ -94,7 +94,7 @@ node{
 		}, envTest:
 		{
 			node{
-					sh 'rm -rf *8'
+					sh 'rm -rf *88'
 					unstash 'dthCode'
 					dir('DTH'){
 						echo"Deploying in Test"
