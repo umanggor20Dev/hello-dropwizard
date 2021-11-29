@@ -1,7 +1,7 @@
 node{
 		
 		
-    checkout_from_reference() {
+    checkout_from_reference(commit) {
     //def reponame = 'code-maven'
      def reponame ='hello-dropwizard'
     def repo_url = "git@bitbucket.org:USER/${reponame}.git"
